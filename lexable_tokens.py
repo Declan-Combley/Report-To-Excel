@@ -116,9 +116,9 @@ def character_to_token(char:str) -> Token:
             return Token(NUMBER, int(char))
         if char.isalpha():
             return Token(LETTER, char)
-        if char == ':' or char == '_' or char == '-' or char == '/' or char == '\'' or char == '$':
+        if char == ':' or char == '_' or char == '-' or char == '/' or char == '\\' or char == '$':
             return Token(SYMBOL, char)
-        if char == '(' or char == ')' or char == '[' or char == ']':
+        if char == '(' or char == ')' or char == '[' or char == ']' or char == '{' or char == '}':
             return Token(PAREN, char)
         if char == '.':
             return Token(DOT, char)
