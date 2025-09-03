@@ -131,6 +131,36 @@ def character_to_token(char:str) -> Token:
         return Token(ERR, char)
 
 
+def tokenize_single_digit_float(unlexed_tokens: UnlexedTokens, lexed_tokens: LexedTokens) -> None:
+    print(f"{BUFFF}Encountered the start of a single digit float {INFO}{unlexed_tokens.current.value}{unlexed_tokens.next.value}...{RESET}", end="")
+    number: str = str(unlexed_tokens.current.value) + str(unlexed_tokens.next.value)
+
+    unlexed_tokens.next_token()
+    unlexed_tokens.next_token()
+
+    while unlexed_tokens.next.type == NUMBER:
+        number += str(unlexed_tokens.current.value)
+        unlexed_tokens.next_token()
+
+    number += str(unlexed_tokens.current.value)
+
+    lexed_tokens.add_new_token(Token(NUMBER, float(number)), unlexed_tokens)
+    print(f" ---> {BOLD}{number}{BOLD}")
+
+
+def tokenize_float(unlexed_tokens: UnlexedTokens, lexed_tokekns: LexedTokens, number: str) -> str:
+    print(f"\n{BUFFFF}Number is actually a {INFO}float{INFO}{RESET}...", end="")
+    unlexed_tokens.next_token()
+
+    while unlexed_tokens.next.type == NUMBER:
+        number += str(unlexed_tokens.current.value)
+        unlexed_tokens.next_token()
+
+    number += str(unlexed_tokens.current.value)
+
+    return number
+
+
 def tokenize_number(unlexed_tokens: UnlexedTokens, lexed_tokens: LexedTokens) -> None:
     print(f"{BUFFF}Encountered the start of a number {INFO}{unlexed_tokens.current.value}{unlexed_tokens.next.value}...{RESET}", end="")
     number: str = ""
@@ -139,14 +169,16 @@ def tokenize_number(unlexed_tokens: UnlexedTokens, lexed_tokens: LexedTokens) ->
         number += str(unlexed_tokens.current.value)
         unlexed_tokens.next_token()
 
-    # if unlexed_tokens.next.type == DOT:
-    #     exit(0)
-
     number += str(unlexed_tokens.current.value)
-    # if unlexed_tokens.next.type != END:
-    # unlexed_tokens.next_token()
 
-    lexed_tokens.add_new_token(Token(NUMBER, number), unlexed_tokens)
+    if unlexed_tokens.next.type == DOT: # <--- Covers Floats | 12.1 | 123.1 | 1234.1 etc || 12.12 | 12.123 | 12.1234 etc
+        number = tokenize_float(unlexed_tokens, lexed_tokens, number)
+        lexed_tokens.add_new_token(Token(NUMBER, float(number)), unlexed_tokens)
+    else: # <--- Covers multiple digit integers | 12 | 123 | 1234 etc
+        lexed_tokens.add_new_token(Token(NUMBER, int(number)), unlexed_tokens)
+
+    # number += str(unlexed_tokens.current.value)
+
     print(f" ---> {BOLD}{number}{BOLD}")
 
 
@@ -175,7 +207,6 @@ def tokenize(PDF: BinaryIO) -> list[Token]:
 
     print(f"{BUF}{YELLOW}Starting tokenization...")
 
-    tmp_tokens.append(Token(NUMBER, 5))
     # Read PDF, extract characters and convert to initial tokens
     reader = PyPDF2.PdfReader(PDF)
     for page in reader.pages:
@@ -198,20 +229,23 @@ def tokenize(PDF: BinaryIO) -> list[Token]:
             unlexed_tokens.next_token()
             continue
 
+        # <--------- Covers 1 | 1.1 | 1.23 |
         if unlexed_tokens.current.type == NUMBER:
-            if unlexed_tokens.next.type == NUMBER:
+            if unlexed_tokens.next.type == NUMBER: # <--- Covers 12 | 123 | 1234 ect
                 tokenize_number(unlexed_tokens, lexed_tokens)
                 continue
 
-            # elif unlexed_tokens.next.type == DOT:
-                # tokenize_float(unlexed_tokens, lexed_tokens)
-                # continue
+            if unlexed_tokens.next.type == DOT: # <--- Covers | 1.1 | 1.23 | 1.234  etc
+                tokenize_single_digit_float(unlexed_tokens, lexed_tokens)
+                continue
 
-        elif unlexed_tokens.current.type == LETTER:
+        # <--------- Covers a | ab | abc ... || a1 | ab2 | abc3 etc || a1b | a1b2 | a1b2c3 etc ||
+        if unlexed_tokens.current.type == LETTER:
             if unlexed_tokens.next.type == LETTER or unlexed_tokens.next.type == SYMBOL: # <-- Covers |a | a,| a\n|
                 tokenize_word(unlexed_tokens, lexed_tokens)
                 continue
 
+        # Accounts for all singular tokens
         lexed_tokens.add_current_token_from(unlexed_tokens) # Inherently moves onto the next token
 
     print(f"{BUFFF}{RED}Hit Last Token.{RESET}")

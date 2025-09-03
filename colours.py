@@ -16,3 +16,4 @@ INFO = YELLOW + BOLD
 BUF: str = "  "
 BUFF: str = BUF + BUF
 BUFFF: str = BUF + BUFF
+BUFFFF: str = BUF + BUFFF
