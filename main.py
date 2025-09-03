@@ -21,9 +21,11 @@ def open_file(file_path: str) -> BinaryIO:
 
 def main() -> int:
     tokens: list[list[Token]] = []
+    no_of_arguments: int = len(sys.argv)
 
-    if len(sys.argv) >= 2: # Ensure there are input files
+    if no_of_arguments >= 2: # Ensure there are input files
         folder_name: str = sys.argv[1]
+
         folder = glob.glob(os.path.join(folder_name, "*.pdf"))
 
         if len(folder) == 0:
