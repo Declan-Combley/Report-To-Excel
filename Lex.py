@@ -1,10 +1,6 @@
 from tkinter import CURRENT
 import PyPDF2 # pyright: ignore[reportMissingImports]
 from typing import BinaryIO # type: ignore
-from Descriptions import *
-from StatusReport import *
-from ServerReport import *
-from Summary import *
 from colours import *
 
 
@@ -59,6 +55,8 @@ class UnlexedTokens:
         self.tokens = tmp_tokens # Should stay unchanged after initialization
 
         self.amount = len(tmp_tokens)
+
+        tmp_tokens.append(Token(SPACE, " ")) # Spacer
         tmp_tokens.append(Token(END, ""))
 
         self.current = tmp_tokens[0]
@@ -70,7 +68,6 @@ class UnlexedTokens:
     def next_token(self) -> None:
         if self.current.type == END or self.next.type == END:
             self.index += 1
-            print(f"{BUFFF}{RED}Hit Last Token.{RESET}")
             return
 
         self.current = self.next
@@ -134,7 +131,25 @@ def character_to_token(char:str) -> Token:
         return Token(ERR, char)
 
 
-# TODO: def tokenize_number(tmp_tokens: list[Token], tokens: list[Token], index: int) -> list[Token]:
+def tokenize_number(unlexed_tokens: UnlexedTokens, lexed_tokens: LexedTokens) -> None:
+    print(f"{BUFFF}Encountered the start of a number {INFO}{unlexed_tokens.current.value}{unlexed_tokens.next.value}...{RESET}", end="")
+    number: str = ""
+
+    while unlexed_tokens.next.type == NUMBER:
+        number += str(unlexed_tokens.current.value)
+        unlexed_tokens.next_token()
+
+    # if unlexed_tokens.next.type == DOT:
+    #     exit(0)
+
+    number += str(unlexed_tokens.current.value)
+    # if unlexed_tokens.next.type != END:
+    # unlexed_tokens.next_token()
+
+    lexed_tokens.add_new_token(Token(NUMBER, number), unlexed_tokens)
+    print(f" ---> {BOLD}{number}{BOLD}")
+
+
 
 # Will concatonate every token up until a space, newline, or End token
 def tokenize_word(unlexed_tokens: UnlexedTokens, lexed_tokens: LexedTokens) -> None:
@@ -160,6 +175,7 @@ def tokenize(PDF: BinaryIO) -> list[Token]:
 
     print(f"{BUF}{YELLOW}Starting tokenization...")
 
+    tmp_tokens.append(Token(NUMBER, 5))
     # Read PDF, extract characters and convert to initial tokens
     reader = PyPDF2.PdfReader(PDF)
     for page in reader.pages:
@@ -173,7 +189,6 @@ def tokenize(PDF: BinaryIO) -> list[Token]:
     unlexed_tokens: UnlexedTokens = UnlexedTokens(tmp_tokens) # Unlexed tokens should remain unchanged
     lexed_tokens: LexedTokens = LexedTokens()
 
-    # while unlexed_tokens.index <= unlexed_tokens.amount:
     while unlexed_tokens.next.type != END:
         # print(f"{BUFFF}{BOLD}Current Index:{RESET} {unlexed_tokens.index}")
         # print(f"{BUFFF}{BOLD}Current Token: {RESET} {unlexed_tokens.current.value}")
@@ -184,21 +199,23 @@ def tokenize(PDF: BinaryIO) -> list[Token]:
             continue
 
         if unlexed_tokens.current.type == NUMBER:
-            pass
-            # tokenize_number(tmp_tokens, tokens, index)
+            if unlexed_tokens.next.type == NUMBER:
+                tokenize_number(unlexed_tokens, lexed_tokens)
+                continue
+
+            # elif unlexed_tokens.next.type == DOT:
+                # tokenize_float(unlexed_tokens, lexed_tokens)
+                # continue
+
         elif unlexed_tokens.current.type == LETTER:
             if unlexed_tokens.next.type == LETTER or unlexed_tokens.next.type == SYMBOL: # <-- Covers |a | a,| a\n|
                 tokenize_word(unlexed_tokens, lexed_tokens)
                 continue
 
-            lexed_tokens.add_current_token_from(unlexed_tokens)
-        unlexed_tokens.next_token()
+        lexed_tokens.add_current_token_from(unlexed_tokens) # Inherently moves onto the next token
 
+    print(f"{BUFFF}{RED}Hit Last Token.{RESET}")
     print(f"\n{BUFF}Amount of tokens {BOLD}prior{RESET} to lexing -> {unlexed_tokens.amount}")
     print(f"{BUFF}Amount After -> {INFO}{len(lexed_tokens.tokens)}{INFO}")
     print(f"{GOOD}\nTokenization complete.\n")
     return lexed_tokens.tokens
-
-
-def parse(tokens: list[Token]) -> StatusReport | ServerReport | None:
-    return None

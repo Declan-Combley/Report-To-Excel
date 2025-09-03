@@ -1,9 +1,9 @@
 from typing import BinaryIO # type: ignore
-from Descriptions import *
-from StatusReport import *
-from ServerReport import *
-from Summary import *
-from Lex import *
+from descriptions import *
+from statusReport import *
+from serverReport import *
+from summary import *
+from lex import *
 from colours import *
 import sys
 

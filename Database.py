@@ -1,4 +1,4 @@
-from Descriptions import *
+from descriptions import *
 
 class DBFile:
   def __init__(self,name: str) -> None:

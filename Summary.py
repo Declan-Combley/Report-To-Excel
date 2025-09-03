@@ -1,4 +1,4 @@
-from Descriptions import *
+from descriptions import *
 
 ERROR: str = "ERROR"
 

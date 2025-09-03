@@ -1,4 +1,4 @@
-from Database import *
+from database import *
 
 class Disk:
     def __init__(self) -> None:
