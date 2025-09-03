@@ -1,9 +1,11 @@
 from descriptions import *
+from reports.reports import *
 
 ERROR: str = "ERROR"
 
 class Summary:
-    def __init__(self) -> None:
+    def __init__(self, reports: Reports) -> None:
+        self.reports = reports
         self.backups: list[Descriptor] = []
         self.DiscSpace: list[Descriptor] = []
         self.DiscIO: list[Descriptor] = []
@@ -12,6 +14,9 @@ class Summary:
         self.IndexFragmentation: list[Descriptor] = []
         self.MemoryUtilisation: list[Descriptor] = []
         self.MemoryAvailability: list[Descriptor] = []
+
+    def convert_to_excel(self) -> None:
+        pass
 
 # class Text:
 #     def __init__(self, text: str, index: int) -> None:

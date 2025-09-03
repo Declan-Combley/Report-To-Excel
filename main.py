@@ -1,19 +1,9 @@
-from typing import BinaryIO # type: ignore
-from descriptions import *
-from statusReport import *
-from serverReport import *
-from summary import *
+from reports.reports import *
+from reports.summary import *
+from parse import *
 from lex import *
-from colours import *
+import os, glob
 import sys
-
-
-def print_tokens(tokens: list[Token]) -> None:
-    for token in tokens:
-        if token.type == UNKNOWN:
-            print(f"{BUF}{BAD}UNKNOWN{RESET} | {INFO}{token.value}")
-        else:
-            print(f"{BUF}{BOLD}{PRINTABLE_TOKENS[token.type]}{RESET} ---> {token.value}")
 
 
 def open_file(file_path: str) -> BinaryIO:
@@ -21,42 +11,55 @@ def open_file(file_path: str) -> BinaryIO:
         PDF: BinaryIO = open(file_path, 'rb')
         return PDF
     except FileNotFoundError:
-        print(f"{BAD}Error:{RESET} Could not find {INFO}{file_path}{RESET}, please double check where that file may be stored.")
+        print(f"{BUF}{BAD}Error:{RESET} Could not find {INFO}{file_path}{RESET}, please ensure that it is not corrupted, and still exists.")
     except PermissionError:
-        print(f"{BAD}Error: {RESET} You do not have permission to access this file.")
+        print(f"{BUF}{BAD}Error: {RESET} You do not have permission to access this file.")
     except Exception as error:
-        print(f"{RED}An unexpected error occurred: {error}")
+        print(f"{BUF}{RED}An unexpected error occurred: {error}")
     exit(1)
 
 
 def main() -> int:
-    input_files_no: int = len(sys.argv) - 1
-    unparsed_tokens: list[list[Token]] = []
+    tokens: list[list[Token]] = []
 
-    if input_files_no != 0:
-        files_names: list[str] = sys.argv[1:]
+    if len(sys.argv) >= 2: # Ensure there are input files
+        folder_name: str = sys.argv[1]
+        folder = glob.glob(os.path.join(folder_name, "*.pdf"))
 
-        index: int = 1
-        for PDF_location in files_names:
-            with open_file(PDF_location) as PDF:
-                print(f"{INFO}[{index}]{RESET} {YELLOW}Processing file:{RESET} {PDF_location}")
+        if len(folder) == 0:
+            print(f"{BUF}{BAD}Error:{RESET} Could not find any files in {INFO}{folder_name}{RESET}")
+            print(f"{BUFF}Please ensure that it exists and that there are SQL HealthCheck {INFO}PDFs{RESET} in it.")
+            exit(1)
+
+        # Itterate through and tokenize all of the files and store them in a tokens array
+        file_no: int = 0
+        for PDF in folder:
+            with open_file(PDF) as PDF:
+                print(f"{INFO}[{file_no}]{RESET} {YELLOW}Processing file:{RESET} {PDF}")
 
                 lexed_tokens: list[Token]  = tokenize(PDF)
-                unparsed_tokens.append(lexed_tokens)
-                index += 1
-    else:
-        print(f"{BAD}Error{RESET}: No file path provided, please {BOLD}add a file{RESET} by copying its route as such.")
-        print(f"{BUF}{INFO}Example{RESET}: python main.py {GREEN}./Examples/test.pdf")
+                tokens.append(lexed_tokens)
+                file_no += 1
+    else: # If there aren't any input files error out
+        print(f"{BAD}Error{RESET}: No folder path provided, please {BOLD}add a file{RESET} by copying its route as such.")
+        print(f"{BUF}{INFO}Example{RESET}: python main.py {GREEN}./Folder")
         exit(1)
 
-    print(f"{INFO}Tokens:{RESET}")
-    for token in unparsed_tokens:
-        print_tokens(token)
+    list_of_all_tokens: list[Token] = [token for token_list in tokens for token in token_list]
 
-    print("")
+    print(f"{BOLD}Files processed:{RESET} {len(tokens)}")
+    print(f"{BOLD}Tokens extracted:{RESET} {len(list_of_all_tokens)}")
 
-    print(f"{BOLD}Files processed:{RESET} {len(unparsed_tokens)}")
-    print(f"{BOLD}Tokens gleamed:{RESET} {sum(len(tokens) for tokens in unparsed_tokens)}\n")
+    print(f"\n{BUF}{INFO}Problematic Tokens{RESET}: ")
+    print_problem_tokens(list_of_all_tokens)
+
+
+    print(f"{YELLOW}Beggining parsing process...")
+    reports: Reports = parse(tokens) # In progress
+
+    summary: Summary = Summary(reports) # Create output using the reports
+    summary.reports.summarise() # TODO
+    summary.convert_to_excel() # TODO
 
     return (0)
 

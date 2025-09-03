@@ -1,155 +1,13 @@
-from tkinter import CURRENT
 import PyPDF2 # pyright: ignore[reportMissingImports]
 from typing import BinaryIO # type: ignore
 from colours import *
+from lexable_tokens import *
 
 
-enum: int = 0
-def iota(reset:bool = False) -> int: # Mimics Enums
-    global enum
-    if reset:
-        enum = 0
-    result: int = enum
-    enum += 1
-    return result
-
-
-NUMBER = iota() # 1
-LETTER = iota() # a
-WORD =  iota() # abc
-SYMBOL = iota()
-DOT = iota() # .
-COMMA = iota() # ,
-PAREN = iota() # ( or )
-PERCENT = iota() # %
-DATE = iota() # 01/01/2001
-SPACE = iota()
-NEWLINE = iota()
-UNKNOWN = iota()
-END = iota()
-ERR = iota()
-
-# PRINTABLE_TOKENS: list[str] = ["NUMBER", "LETTER", "WORD", "SYMBOL", "DOT", "COMMA", "PERCENT", "DATE", "SPACE", "NEWLINE", "UNKNOWN", "END", "ERR"] Without Paren
-PRINTABLE_TOKENS: list[str] = ["NUMBER", "LETTER", "WORD", "SYMBOL", "DOT", "COMMA", "PARENTHESIS", "PERCENT", "DATE", "SPACE", "NEWLINE", "UNKNOWN", "END", "ERR"]
-
-
-class Token:
-    type: int
-    value: int | float | str
-
-    def __init__(self, type: int, value: int | float | str) -> None:
-        self.type = type
-        self.value = value
-
-
-class UnlexedTokens:
-    tokens: list[Token]
-
-    current: Token
-    next: Token
-
-    amount: int
-    index: int = 1
-
-    def __init__(self, tmp_tokens: list[Token]) -> None:
-        self.tokens = tmp_tokens # Should stay unchanged after initialization
-
-        self.amount = len(tmp_tokens)
-
-        tmp_tokens.append(Token(SPACE, " ")) # Spacer
-        tmp_tokens.append(Token(END, ""))
-
-        self.current = tmp_tokens[0]
-        self.next = tmp_tokens[1]
-
-        print(f"{BUFF}Appended {BOLD}END{RESET} token.")
-
-    # Should be the only way to itterate through the tokens
-    def next_token(self) -> None:
-        if self.current.type == END or self.next.type == END:
-            self.index += 1
-            return
-
-        self.current = self.next
-        self.index += 1
-
-        self.next = self.tokens[self.index]
-
-    # Deterimines if the current token can be skipped
-    def current_token_is_skipable(self) -> bool:
-        type: int = self.current.type
-        if type == SPACE or type == COMMA or type == NEWLINE or type == PAREN:
-            return True
-        return False
-
-    # Deterimines if the current token can be skipped
-    def next_token_is_skipable(self) -> bool:
-        type: int = self.next.type
-        if type == SPACE or type == COMMA or type == NEWLINE or type == PAREN:
-            return True
-        return False
-
-
-class LexedTokens:
-    def __init__(self) -> None:
-        self.tokens: list[Token] = []
-
-    def add_current_token_from(self, unlexed_tokens: UnlexedTokens) -> None:
-        if unlexed_tokens.current.type == END:
-            return
-        self.tokens.append(unlexed_tokens.current)
-        unlexed_tokens.next_token()
-
-    def add_new_token(self, token: Token, unlexed_tokens: UnlexedTokens) -> None:
-        self.tokens.append(token)
-        unlexed_tokens.next_token()
-
-
-def character_to_token(char:str) -> Token:
-    try:
-        if char.isdigit():
-            return Token(NUMBER, char)
-        if char.isalpha():
-            return Token(LETTER, char)
-        if char == ':' or char == '_' or char == '-' or char == '/' or char == '\'':
-            return Token(SYMBOL, char)
-        if char == '(' or char == ')':
-            return Token(PAREN, char)
-        if char == '.':
-            return Token(DOT, char)
-        if char == ',':
-            return Token(COMMA, char)
-        if char == '%':
-            return Token(PERCENT, char)
-        if char == ' ' or char == '\t':
-            return Token(SPACE, char)
-        if char == '\n' or char == '\r':
-            return Token(NEWLINE, "\\n")
-        else:
-            return Token(UNKNOWN, char)
-    except IndexError:
-        return Token(ERR, char)
-
-
-def tokenize_single_digit_float(unlexed_tokens: UnlexedTokens, lexed_tokens: LexedTokens) -> None:
-    print(f"{BUFFF}Encountered the start of a single digit float {INFO}{unlexed_tokens.current.value}{unlexed_tokens.next.value}...{RESET}", end="")
-    number: str = str(unlexed_tokens.current.value) + str(unlexed_tokens.next.value)
-
-    unlexed_tokens.next_token()
-    unlexed_tokens.next_token()
-
-    while unlexed_tokens.next.type == NUMBER:
-        number += str(unlexed_tokens.current.value)
-        unlexed_tokens.next_token()
-
-    number += str(unlexed_tokens.current.value)
-
-    lexed_tokens.add_new_token(Token(NUMBER, float(number)), unlexed_tokens)
-    print(f" ---> {BOLD}{number}{BOLD}")
-
-
-def tokenize_float(unlexed_tokens: UnlexedTokens, lexed_tokekns: LexedTokens, number: str) -> str:
-    print(f"\n{BUFFFF}Number is actually a {INFO}float{INFO}{RESET}...", end="")
+# Will return the remaining digits of a number that has had everything before the elipses stripped
+# NOTE: Will only be used within the tokenize_number function
+def tokenize_float(unlexed_tokens: UnlexedTokens, number: str) -> str:
+    print(f" ---> float", end="")
     unlexed_tokens.next_token()
 
     while unlexed_tokens.next.type == NUMBER:
@@ -161,29 +19,31 @@ def tokenize_float(unlexed_tokens: UnlexedTokens, lexed_tokekns: LexedTokens, nu
     return number
 
 
+# Will tokenize numbers and floats
 def tokenize_number(unlexed_tokens: UnlexedTokens, lexed_tokens: LexedTokens) -> None:
-    print(f"{BUFFF}Encountered the start of a number {INFO}{unlexed_tokens.current.value}{unlexed_tokens.next.value}...{RESET}", end="")
+    print(f"{BUFFF}Encountered a number {INFO}{unlexed_tokens.current.value}...{RESET}", end="")
     number: str = ""
 
+    # Will add the digits until there aren't anymore
     while unlexed_tokens.next.type == NUMBER:
         number += str(unlexed_tokens.current.value)
         unlexed_tokens.next_token()
 
     number += str(unlexed_tokens.current.value)
 
-    if unlexed_tokens.next.type == DOT: # <--- Covers Floats | 12.1 | 123.1 | 1234.1 etc || 12.12 | 12.123 | 12.1234 etc
-        number = tokenize_float(unlexed_tokens, lexed_tokens, number)
+    # Will check if there is an elipsies that would indicate that the number is actually a float
+    if unlexed_tokens.next.type == DOT:
+        number = tokenize_float(unlexed_tokens, number) # Will get the remaining characters of the float and save it as such
         lexed_tokens.add_new_token(Token(NUMBER, float(number)), unlexed_tokens)
-    else: # <--- Covers multiple digit integers | 12 | 123 | 1234 etc
+    else: # If not it will save the token as an integer
         lexed_tokens.add_new_token(Token(NUMBER, int(number)), unlexed_tokens)
+        print(f" ---> int ", end="")
 
-    # number += str(unlexed_tokens.current.value)
-
-    print(f" ---> {BOLD}{number}{BOLD}")
-
+    print(f" ---> {BOLD}{number}{RESET}")
 
 
 # Will concatonate every token up until a space, newline, or End token
+# NOTE: Including numbers and symbols
 def tokenize_word(unlexed_tokens: UnlexedTokens, lexed_tokens: LexedTokens) -> None:
     print(f"{BUFFF}Encountered the start of a word {INFO}{unlexed_tokens.current.value}{unlexed_tokens.next.value}...{RESET}", end="")
     word: str = ''
@@ -202,6 +62,7 @@ def tokenize_word(unlexed_tokens: UnlexedTokens, lexed_tokens: LexedTokens) -> N
     print(f" ---> {BOLD}{word}{BOLD}")
 
 
+# This will convert all of the PDF contents into computer readable tokens
 def tokenize(PDF: BinaryIO) -> list[Token]:
     tmp_tokens: list[Token] = []
 
@@ -215,41 +76,39 @@ def tokenize(PDF: BinaryIO) -> list[Token]:
             token: Token = character_to_token(char)
             tmp_tokens.append(token)
 
-    #         print(f"Character '{char if token.type != NEWLINE else "\\n"}' converted to {BOLD}{PRINTABLE_TOKENS[token.type]}{RESET} with value '{token.value}'")
 
-    unlexed_tokens: UnlexedTokens = UnlexedTokens(tmp_tokens) # Unlexed tokens should remain unchanged
+    unlexed_tokens: UnlexedTokens = UnlexedTokens(tmp_tokens)
     lexed_tokens: LexedTokens = LexedTokens()
 
+    # Itterate through all of the unlexed tokens
     while unlexed_tokens.next.type != END:
-        # print(f"{BUFFF}{BOLD}Current Index:{RESET} {unlexed_tokens.index}")
-        # print(f"{BUFFF}{BOLD}Current Token: {RESET} {unlexed_tokens.current.value}")
 
+        # We can skip these becuase we now they aren't useful
+        # (They would have been included as part of a previous float or word)
         if unlexed_tokens.current_token_is_skipable():
             print(f"{BUFFF}Skipping {BOLD}{PRINTABLE_TOKENS[unlexed_tokens.current.type]}{RESET} token at index {unlexed_tokens.index}")
             unlexed_tokens.next_token()
             continue
 
-        # <--------- Covers 1 | 1.1 | 1.23 |
+        # <--------- Covers integers and floats
         if unlexed_tokens.current.type == NUMBER:
-            if unlexed_tokens.next.type == NUMBER: # <--- Covers 12 | 123 | 1234 ect
-                tokenize_number(unlexed_tokens, lexed_tokens)
-                continue
+            tokenize_number(unlexed_tokens, lexed_tokens)
+            continue
 
-            if unlexed_tokens.next.type == DOT: # <--- Covers | 1.1 | 1.23 | 1.234  etc
-                tokenize_single_digit_float(unlexed_tokens, lexed_tokens)
-                continue
-
-        # <--------- Covers a | ab | abc ... || a1 | ab2 | abc3 etc || a1b | a1b2 | a1b2c3 etc ||
+        # <--------- Covers Words
+        # NOTE: Words can include numbers and symbols
         if unlexed_tokens.current.type == LETTER:
-            if unlexed_tokens.next.type == LETTER or unlexed_tokens.next.type == SYMBOL: # <-- Covers |a | a,| a\n|
+            if unlexed_tokens.next.type == LETTER or unlexed_tokens.next.type == SYMBOL: # <-- Covers singular letters
                 tokenize_word(unlexed_tokens, lexed_tokens)
                 continue
 
-        # Accounts for all singular tokens
+        # Accounts for all singular tokens as they will not have fallen under any of the other previous cases
         lexed_tokens.add_current_token_from(unlexed_tokens) # Inherently moves onto the next token
+
 
     print(f"{BUFFF}{RED}Hit Last Token.{RESET}")
     print(f"\n{BUFF}Amount of tokens {BOLD}prior{RESET} to lexing -> {unlexed_tokens.amount}")
     print(f"{BUFF}Amount After -> {INFO}{len(lexed_tokens.tokens)}{INFO}")
     print(f"{GOOD}\nTokenization complete.\n")
+
     return lexed_tokens.tokens
