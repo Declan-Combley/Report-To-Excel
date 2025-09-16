@@ -1,5 +1,5 @@
 from database import *
-from lexable_tokens import *
+from tokens.lexable_tokens import *
 
 class Disk:
   def __init__(self) -> None:
@@ -25,14 +25,18 @@ class StatusReport:
     self.memory: Memory = Memory()
     self.utilisation: Utilisation = Utilisation()
 
-class ServerReport:
+class DatabaseReport:
   def __init__(self, name: str) -> None:
     self.name: str = name
 
 
 class Reports:
-  def __init__(self, ) -> None:
+  def __init__(self, status_reports: list[StatusReport], database_reports: list[DatabaseReport]) -> None:
+    self.status_reports: list[StatusReport] = status_reports
+    self.database_reports: list[DatabaseReport] = database_reports
     pass
 
+
+  # TODO
   def summarise(self) -> None:
     pass

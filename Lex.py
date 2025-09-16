@@ -1,7 +1,7 @@
 import PyPDF2 # pyright: ignore[reportMissingImports]
 from typing import BinaryIO # type: ignore
 from colours import *
-from lexable_tokens import *
+from tokens.lexable_tokens import *
 
 
 # Will return the remaining digits of a number that has had everything before the elipses stripped
@@ -82,7 +82,6 @@ def tokenize(PDF: BinaryIO) -> list[Token]:
 
     # Itterate through all of the unlexed tokens
     while unlexed_tokens.next.type != END:
-
         # We can skip these becuase we now they aren't useful
         # (They would have been included as part of a previous float or word)
         if unlexed_tokens.current_token_is_skipable():
@@ -96,14 +95,14 @@ def tokenize(PDF: BinaryIO) -> list[Token]:
             continue
 
         # <--------- Covers Words
-        # NOTE: Words can include numbers and symbols
+        # NOTE: Words can include numbers and symbols E.g. "Computer/123"
         if unlexed_tokens.current.type == LETTER:
             if unlexed_tokens.next.type == LETTER or unlexed_tokens.next.type == SYMBOL: # <-- Covers singular letters
                 tokenize_word(unlexed_tokens, lexed_tokens)
                 continue
 
         # Accounts for all singular tokens as they will not have fallen under any of the other previous cases
-        lexed_tokens.add_current_token_from(unlexed_tokens) # Inherently moves onto the next token
+        lexed_tokens.add_current_token_from(unlexed_tokens) # Inherently moves onto the next token and continues the loop
 
 
     print(f"{BUFFF}{RED}Hit Last Token.{RESET}")

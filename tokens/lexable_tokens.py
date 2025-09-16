@@ -1,51 +1,5 @@
 from colours import *
-
-enum: int = 0
-def iota(reset:bool = False) -> int: # Mimics Enums
-    global enum
-    if reset:
-        enum = 0
-    result: int = enum
-    enum += 1
-    return result
-
-
-NUMBER = iota() # Float or Int
-FLOAT = iota() #1.1
-LETTER = iota() # a
-WORD =  iota() # abc
-SYMBOL = iota()
-DOT = iota() # .
-COMMA = iota() # ,
-PAREN = iota() # ( or )
-PERCENT = iota() # %
-DATE = iota() # 01/01/2001
-SPACE = iota()
-NEWLINE = iota()
-UNKNOWN = iota()
-END = iota()
-ERR = iota()
-
-PRINTABLE_TOKENS: list[str] = ["NUMBER", "FLOAT", "LETTER", "WORD", "SYMBOL", "DOT", "COMMA", "PARENTHESIS", "PERCENT", "DATE", "SPACE", "NEWLINE", "UNKNOWN", "END", "ERR"]
-
-
-class Token:
-    type: int
-    value: int | float | str
-
-    def __init__(self, type: int, value: int | float | str) -> None:
-        self.type = type
-        self.value = value
-
-        # try:
-        #     if type == number:
-        #         self.value = int(value)
-        #     if type == float:
-        #         self.value = float(value)
-        # except ValueError as exception:
-        #     print(exception)
-        #     exit(1)
-
+from ._token import *
 
 class UnlexedTokens:
     tokens: list[Token]
@@ -57,7 +11,7 @@ class UnlexedTokens:
     index: int = 1
 
     def __init__(self, tmp_tokens: list[Token]) -> None:
-        self.tokens = tmp_tokens # Should stay unchanged after initialization
+        self.tokens = tmp_tokens # Tmp tokens should stay unchanged after initialization
 
         self.amount = len(tmp_tokens)
 
@@ -111,29 +65,31 @@ class LexedTokens:
 
 
 def character_to_token(char:str) -> Token:
-    try:
-        if char.isdigit():
-            return Token(NUMBER, int(char))
-        if char.isalpha():
-            return Token(LETTER, char)
-        if char == ':' or char == '_' or char == '-' or char == '/' or char == '\\' or char == '$':
-            return Token(SYMBOL, char)
-        if char == '(' or char == ')' or char == '[' or char == ']' or char == '{' or char == '}':
-            return Token(PAREN, char)
-        if char == '.':
-            return Token(DOT, char)
-        if char == ',':
-            return Token(COMMA, char)
-        if char == '%':
-            return Token(PERCENT, char)
-        if char == ' ' or char == '\t':
-            return Token(SPACE, char)
-        if char == '\n' or char == '\r':
-            return Token(NEWLINE, "\\n")
-        else:
-            return Token(UNKNOWN, char)
-    except IndexError:
-        return Token(ERR, char)
+    if char.isdigit():
+        return Token(NUMBER, int(char))
+    if char.isalpha():
+        return Token(LETTER, char)
+    if char == ':' or char == '_' or char == '-' or char == '/' or char == '\\' or char == '$':
+        return Token(SYMBOL, char)
+    if char == '(' or char == ')' or char == '[' or char == ']' or char == '{' or char == '}':
+        return Token(PAREN, char)
+    if char == '.':
+        return Token(DOT, char)
+    if char == ',':
+        return Token(COMMA, char)
+    if char == '%':
+        return Token(PERCENT, char)
+    if char == ' ' or char == '\t':
+        return Token(SPACE, char)
+    if char == '\n' or char == '\r':
+        return Token(NEWLINE, "\\n")
+    else:
+        return Token(UNKNOWN, char)
+
+
+def print_token(token: Token) -> None:
+    print(f"{BOLD}{PRINTABLE_TOKENS[token.type]}{RESET} --> {token.value}")
+
 
 def print_problem_tokens(tokens: list[Token]) -> None:
     no_problem_tokens_exist: bool = True

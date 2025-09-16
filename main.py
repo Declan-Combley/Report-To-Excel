@@ -25,19 +25,18 @@ def main() -> int:
 
     if no_of_arguments >= 2: # Ensure there are input files
         folder_name: str = sys.argv[1]
-
         folder = glob.glob(os.path.join(folder_name, "*.pdf"))
 
         if len(folder) == 0:
             print(f"{BUF}{BAD}Error:{RESET} Could not find any files in {INFO}{folder_name}{RESET}")
-            print(f"{BUFF}Please ensure that it exists and that there are SQL HealthCheck {INFO}PDFs{RESET} in it.")
+            print(f"{BUFF}Please ensure that it exists and that there are SQL Health Check {INFO}PDFs{RESET} in it.")
             exit(1)
 
         # Itterate through and tokenize all of the files and store them in a tokens array
         file_no: int = 0
-        for PDF in folder:
-            with open_file(PDF) as PDF:
-                print(f"{INFO}[{file_no}]{RESET} {YELLOW}Processing file:{RESET} {PDF}")
+        for PDF_location in folder:
+            with open_file(PDF_location) as PDF:
+                print(f"{INFO}[{file_no}]{RESET} {YELLOW}Processing file:{RESET} {PDF_location}")
 
                 lexed_tokens: list[Token]  = tokenize(PDF)
                 tokens.append(lexed_tokens)
@@ -57,7 +56,7 @@ def main() -> int:
 
 
     print(f"{YELLOW}Beggining parsing process...")
-    reports: Reports = parse(tokens) # In progress
+    reports: Reports = parse(UnparsedTokens(tokens)) # In progress
 
     summary: Summary = Summary(reports) # Create output using the reports
     summary.reports.summarise() # TODO
