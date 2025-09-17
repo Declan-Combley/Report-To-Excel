@@ -6,7 +6,7 @@ ERROR: str = "ERROR"
 class Summary:
     def __init__(self, reports: Reports) -> None:
         self.reports = reports
-        self.backups: list[Descriptor] = []
+        self.Backups: list[Descriptor] = []
         self.DiscSpace: list[Descriptor] = []
         self.DiscIO: list[Descriptor] = []
         self.ReadLatency: list[Descriptor] = []

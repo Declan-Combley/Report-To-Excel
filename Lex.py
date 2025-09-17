@@ -69,7 +69,7 @@ def tokenize(PDF: BinaryIO) -> list[Token]:
     print(f"{BUF}{YELLOW}Starting tokenization...")
 
     # Read PDF, extract characters and convert to initial tokens
-    reader = PyPDF2.PdfReader(PDF)
+    reader = PyPDF2.PdfReader(PDF, strict=True)
     for page in reader.pages:
         text: str = page.extract_text()
         for char in text:

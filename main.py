@@ -41,6 +41,7 @@ def main() -> int:
                 lexed_tokens: list[Token]  = tokenize(PDF)
                 tokens.append(lexed_tokens)
                 file_no += 1
+
     else: # If there aren't any input files error out
         print(f"{BAD}Error{RESET}: No folder path provided, please {BOLD}add a file{RESET} by copying its route as such.")
         print(f"{BUF}{INFO}Example{RESET}: python main.py {GREEN}./Folder")
