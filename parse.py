@@ -25,7 +25,7 @@ def parse_status_report(unparsed: UnparsedTokens) -> StatusReport:
   return report
 
 
-# TODO
+# TODO Not implemented at all and may need alot more processing
 def parse_database_report(unparsed: UnparsedTokens) -> DatabaseReport:
   error("Cannot parse database report", "Not implemented", True)
   machine_name: str = ""
@@ -40,6 +40,7 @@ def parse_database_report(unparsed: UnparsedTokens) -> DatabaseReport:
   return report
 
 
+# Will convert the tokens into a list of reports
 def parse(unparsed: UnparsedTokens) -> Reports:
   status_reports: list[StatusReport] = []
   database_reports: list[DatabaseReport] = []
